@@ -2661,28 +2661,104 @@ async def send_planning(
     update,
     context,
 ):
+    try:
+        logger.info("=== DÉBUT GÉNÉRATION IMAGE ===")
 
-    image = generate_planning_image(
-        context.user_data.get(
-            "date",
-            "",
-        ),
-        context.user_data.get(
+        logger.info(
+            "BASE_DIR = %s",
+            BASE_DIR,
+        )
+
+        logger.info(
+            "FONT_BOLD = %s | existe=%s",
+            FONT_BOLD,
+            os.path.isfile(FONT_BOLD),
+        )
+
+        logger.info(
+            "FONT_MEDIUM = %s | existe=%s",
+            FONT_MEDIUM,
+            os.path.isfile(FONT_MEDIUM),
+        )
+
+        logger.info(
+            "LOGOS_DIR = %s | existe=%s",
+            LOGOS_DIR,
+            os.path.isdir(LOGOS_DIR),
+        )
+
+        background_path = context.user_data.get(
+            "background_path"
+        )
+
+        logger.info(
+            "background_path = %s | existe=%s",
+            background_path,
+            bool(
+                background_path
+                and os.path.isfile(background_path)
+            ),
+        )
+
+        entries = context.user_data.get(
             "entries",
             [],
-        ),
-        context.user_data.get(
-            "background_path"
-        ),
-    )
+        )
 
-    await update.message.reply_photo(
-        photo=image,
-        caption=(
-            "📌 Planning des sorties animes du "
-            f"{context.user_data.get('date', '')}"
-        ),
-    )
+        logger.info(
+            "Nombre d'anime = %d",
+            len(entries),
+        )
+
+        image = generate_planning_image(
+            context.user_data.get(
+                "date",
+                "",
+            ),
+            entries,
+            background_path,
+        )
+
+        logger.info(
+            "Image générée : type=%s",
+            type(image).__name__,
+        )
+
+        if image is None:
+            raise RuntimeError(
+                "generate_planning_image() "
+                "a retourné None."
+            )
+
+        if hasattr(image, "seek"):
+            image.seek(0)
+
+        logger.info(
+            "Envoi de l'image à Telegram..."
+        )
+
+        await update.message.reply_photo(
+            photo=image,
+            caption=(
+                "📌 Planning des sorties animes du "
+                f"{context.user_data.get('date', '')}"
+            ),
+        )
+
+        logger.info(
+            "=== IMAGE ENVOYÉE AVEC SUCCÈS ==="
+        )
+
+    except Exception as exc:
+        logger.exception(
+            "ERREUR GÉNÉRATION/ENVOI IMAGE"
+        )
+
+        await update.message.reply_text(
+            "❌ Une erreur est survenue pendant "
+            "la génération de l'image.\n\n"
+            f"Erreur : {type(exc).__name__}: {exc}"
+        )
 
 
 # ==============================================================
