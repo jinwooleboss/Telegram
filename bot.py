@@ -1014,6 +1014,11 @@ def _load_background(
     darken=160,
 ):
 
+    logger.info(
+        "FOND: ouverture de %s",
+        path,
+    )
+
     bg = Image.open(
         path
     ).convert("RGB")
@@ -1105,6 +1110,22 @@ def generate_planning_image(
     entries,
     background_path=None,
 ):
+    logger.info("GEN: entrée dans generate_planning_image")
+
+    logger.info(
+        "GEN: date=%s",
+        date_str,
+    )
+
+    logger.info(
+        "GEN: entries=%s",
+        entries,
+    )
+
+    logger.info(
+        "GEN: background=%s",
+        background_path,
+    )
 
     W = W_BASE
 
@@ -1112,7 +1133,6 @@ def generate_planning_image(
     vf_entries = []
 
     for entry in entries:
-
         version = normalize_version(
             entry.get(
                 "version",
@@ -1124,26 +1144,14 @@ def generate_planning_image(
             "VO",
             "VOSTANG",
         ):
-
-            platform_entries.append(
-                entry
-            )
+            platform_entries.append(entry)
 
         elif version == "VF":
-
-            vf_entries.append(
-                entry
-            )
+            vf_entries.append(entry)
 
         elif version == "LES DEUX":
-
-            platform_entries.append(
-                entry
-            )
-
-            vf_entries.append(
-                entry
-            )
+            platform_entries.append(entry)
+            vf_entries.append(entry)
 
     platforms_order = []
     by_platform = {}
@@ -1215,6 +1223,7 @@ def generate_planning_image(
         W = round(
             H * 3 / 4
         )
+    logger.info("GEN: création du canvas W=%s H=%s", W, content_h)
 
     content = Image.new(
         "RGBA",
@@ -1233,6 +1242,8 @@ def generate_planning_image(
     draw = ImageDraw.Draw(
         content
     )
+    
+    logger.info("GEN: canvas créé")
 
     f_title = _font(
         FONT_BOLD,
@@ -2662,52 +2673,16 @@ async def send_planning(
     context,
 ):
     try:
-        logger.info("=== DÉBUT GÉNÉRATION IMAGE ===")
-
-        logger.info(
-            "BASE_DIR = %s",
-            BASE_DIR,
-        )
-
-        logger.info(
-            "FONT_BOLD = %s | existe=%s",
-            FONT_BOLD,
-            os.path.isfile(FONT_BOLD),
-        )
-
-        logger.info(
-            "FONT_MEDIUM = %s | existe=%s",
-            FONT_MEDIUM,
-            os.path.isfile(FONT_MEDIUM),
-        )
-
-        logger.info(
-            "LOGOS_DIR = %s | existe=%s",
-            LOGOS_DIR,
-            os.path.isdir(LOGOS_DIR),
-        )
-
-        background_path = context.user_data.get(
-            "background_path"
-        )
-
-        logger.info(
-            "background_path = %s | existe=%s",
-            background_path,
-            bool(
-                background_path
-                and os.path.isfile(background_path)
-            ),
-        )
-
-        entries = context.user_data.get(
-            "entries",
-            [],
-        )
+        logger.info("=== DEBUT GENERATION IMAGE ===")
 
         logger.info(
             "Nombre d'anime = %d",
-            len(entries),
+            len(
+                context.user_data.get(
+                    "entries",
+                    [],
+                )
+            ),
         )
 
         image = generate_planning_image(
@@ -2715,27 +2690,20 @@ async def send_planning(
                 "date",
                 "",
             ),
-            entries,
-            background_path,
+            context.user_data.get(
+                "entries",
+                [],
+            ),
+            context.user_data.get(
+                "background_path",
+            ),
         )
 
         logger.info(
-            "Image générée : type=%s",
-            type(image).__name__,
+            "Image générée avec succès"
         )
 
-        if image is None:
-            raise RuntimeError(
-                "generate_planning_image() "
-                "a retourné None."
-            )
-
-        if hasattr(image, "seek"):
-            image.seek(0)
-
-        logger.info(
-            "Envoi de l'image à Telegram..."
-        )
+        image.seek(0)
 
         await update.message.reply_photo(
             photo=image,
@@ -2746,20 +2714,18 @@ async def send_planning(
         )
 
         logger.info(
-            "=== IMAGE ENVOYÉE AVEC SUCCÈS ==="
+            "Image envoyée avec succès"
         )
 
     except Exception as exc:
         logger.exception(
-            "ERREUR GÉNÉRATION/ENVOI IMAGE"
+            "ERREUR GENERATION IMAGE"
         )
 
         await update.message.reply_text(
-            "❌ Une erreur est survenue pendant "
-            "la génération de l'image.\n\n"
-            f"Erreur : {type(exc).__name__}: {exc}"
+            "❌ Erreur pendant la génération :\n\n"
+            f"{type(exc).__name__}: {exc}"
         )
-
 
 # ==============================================================
 # MENU APRÈS GÉNÉRATION
