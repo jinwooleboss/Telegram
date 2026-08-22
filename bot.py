@@ -2039,8 +2039,9 @@ def generate_planning_image(
     )
 
     footer = (
-        "ABONNEZ-VOUS À NOTRE COMPTE"
-    )
+    "SI TU VEUX QUE JE FASSE LE PLANNING POUR TOI, "
+    "CONTACTE MOI @AkiraKuroda"
+)
 
     f_footer = _font(
         FONT_BOLD,
