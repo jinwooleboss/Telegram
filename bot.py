@@ -977,9 +977,13 @@ def _load_background(
     target_h,
     darken=160,
 ):
-    logger.info("FOND 1 : ouverture de %s", path)
+    logger.info(
+        "FOND 1 : ouverture de %s",
+        path,
+    )
 
     with Image.open(path) as original:
+
         logger.info(
             "FOND 2 : taille originale = %s x %s, mode=%s",
             original.width,
@@ -987,8 +991,6 @@ def _load_background(
             original.mode,
         )
 
-        # Empêche les images gigantesques de faire exploser
-        # la mémoire du serveur.
         original.thumbnail(
             (2500, 2500),
             Image.Resampling.LANCZOS,
@@ -1014,7 +1016,10 @@ def _load_background(
     src_ratio = src_w / src_h
 
     if src_ratio > target_ratio:
-        new_w = int(src_h * target_ratio)
+
+        new_w = int(
+            src_h * target_ratio
+        )
 
         left = max(
             0,
@@ -1031,7 +1036,10 @@ def _load_background(
         )
 
     else:
-        new_h = int(src_w / target_ratio)
+
+        new_h = int(
+            src_w / target_ratio
+        )
 
         top = max(
             0,
@@ -1067,30 +1075,33 @@ def _load_background(
         bg.height,
     )
 
-    overlay = Image.new(
-        "RGBA",
-        (
-            target_w,
-            target_h,
-        ),
-        (
-            18,
-            19,
-            23,
-            darken,
-        ),
+    # ----------------------------------------------------------
+    # ASSOMBRISSEMENT SIMPLE
+    # ----------------------------------------------------------
+    #
+    # On évite Image.alpha_composite().
+    # Cela réduit fortement la consommation mémoire.
+    #
+
+    darken_factor = (
+        1.0 - (darken / 255.0)
     )
 
-    logger.info("FOND 7 : création overlay terminée")
-
-    bg = Image.alpha_composite(
-        bg.convert("RGBA"),
-        overlay,
+    logger.info(
+        "FOND 7 : assombrissement du fond..."
     )
 
-    logger.info("FOND 8 : alpha_composite terminé")
+    bg = bg.point(
+        lambda pixel: int(
+            pixel * darken_factor
+        )
+    )
 
-    return bg.convert("RGB")
+    logger.info(
+        "FOND 8 : assombrissement terminé"
+    )
+
+    return bg
 
 
 # ==============================================================
