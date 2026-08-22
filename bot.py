@@ -971,42 +971,55 @@ async def download_image_url(
 # ==============================================================
 # FOND
 # ==============================================================
-
 def _load_background(
     path,
     target_w,
     target_h,
     darken=160,
 ):
+    logger.info("FOND 1 : ouverture de %s", path)
 
-    logger.info(
-        "FOND: ouverture de %s",
-        path,
-    )
+    with Image.open(path) as original:
+        logger.info(
+            "FOND 2 : taille originale = %s x %s, mode=%s",
+            original.width,
+            original.height,
+            original.mode,
+        )
 
-    bg = Image.open(
-        path
-    ).convert("RGB")
+        # Empêche les images gigantesques de faire exploser
+        # la mémoire du serveur.
+        original.thumbnail(
+            (2500, 2500),
+            Image.Resampling.LANCZOS,
+        )
+
+        logger.info(
+            "FOND 3 : taille après réduction = %s x %s",
+            original.width,
+            original.height,
+        )
+
+        bg = original.convert("RGB")
 
     src_w, src_h = bg.size
 
-    target_ratio = (
-        target_w / target_h
+    logger.info(
+        "FOND 4 : préparation du crop %s x %s",
+        src_w,
+        src_h,
     )
 
-    src_ratio = (
-        src_w / src_h
-    )
+    target_ratio = target_w / target_h
+    src_ratio = src_w / src_h
 
     if src_ratio > target_ratio:
+        new_w = int(src_h * target_ratio)
 
-        new_w = int(
-            src_h * target_ratio
+        left = max(
+            0,
+            (src_w - new_w) // 2,
         )
-
-        left = (
-            src_w - new_w
-        ) // 2
 
         bg = bg.crop(
             (
@@ -1018,14 +1031,12 @@ def _load_background(
         )
 
     else:
+        new_h = int(src_w / target_ratio)
 
-        new_h = int(
-            src_w / target_ratio
+        top = max(
+            0,
+            (src_h - new_h) // 2,
         )
-
-        top = (
-            src_h - new_h
-        ) // 2
 
         bg = bg.crop(
             (
@@ -1036,12 +1047,24 @@ def _load_background(
             )
         )
 
+    logger.info(
+        "FOND 5 : crop terminé = %s x %s",
+        bg.width,
+        bg.height,
+    )
+
     bg = bg.resize(
         (
             target_w,
             target_h,
         ),
         Image.Resampling.LANCZOS,
+    )
+
+    logger.info(
+        "FOND 6 : resize terminé = %s x %s",
+        bg.width,
+        bg.height,
     )
 
     overlay = Image.new(
@@ -1058,10 +1081,14 @@ def _load_background(
         ),
     )
 
+    logger.info("FOND 7 : création overlay terminée")
+
     bg = Image.alpha_composite(
         bg.convert("RGBA"),
         overlay,
     )
+
+    logger.info("FOND 8 : alpha_composite terminé")
 
     return bg.convert("RGB")
 
@@ -1688,6 +1715,7 @@ def generate_planning_image(
                 W,
                 H,
             )
+            logger.info("GEN: fond chargé avec succès")
 
         except Exception:
 
@@ -1746,7 +1774,7 @@ def generate_planning_image(
         ),
         content,
     )
-
+    logger.info("GEN: contenu collé sur le fond")
     # ----------------------------------------------------------
     # FOOTER
     # ----------------------------------------------------------
@@ -1791,6 +1819,7 @@ def generate_planning_image(
         format="PNG",
         optimize=True,
     )
+    logger.info("GEN: PNG sauvegardé en mémoire")
 
     buffer.seek(0)
 
