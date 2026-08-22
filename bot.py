@@ -1295,6 +1295,74 @@ def _load_background(
     )
 
     return bg
+    
+def _time_sort_key(value):
+    """
+    Transforme une heure comme :
+    7H
+    07H
+    7H30
+    07H30
+    19:45
+    19H45
+
+    en valeur numérique permettant
+    un tri chronologique.
+    """
+
+    text = str(value).strip().upper()
+
+    if not text:
+        return 24 * 60
+
+    match = re.search(
+        r"(\d{1,2})\s*[H:]\s*(\d{1,2})?",
+        text,
+    )
+
+    if not match:
+        # Si le format est inconnu,
+        # on place l'entrée à la fin.
+        return 24 * 60 + 1
+
+    try:
+        hour = int(match.group(1))
+        minute = int(
+            match.group(2)
+            or 0
+        )
+
+        # Protection contre les heures invalides
+        if not 0 <= hour <= 23:
+            return 24 * 60 + 1
+
+        if not 0 <= minute <= 59:
+            return 24 * 60 + 1
+
+        return (
+            hour * 60
+            + minute
+        )
+
+    except (ValueError, TypeError):
+
+        return 24 * 60 + 1
+
+
+def sort_entries_by_time(entries):
+    """
+    Trie les anime du plus tôt au plus tard.
+    """
+
+    return sorted(
+        entries,
+        key=lambda entry: _time_sort_key(
+            entry.get(
+                "heure",
+                "",
+            )
+        ),
+    )
 
 
 # ==============================================================
@@ -1317,6 +1385,35 @@ def generate_planning_image(
             "Aucun anime à afficher."
         )
 
+    # ----------------------------------------------------------
+    # TRI CHRONOLOGIQUE
+    # ----------------------------------------------------------
+    #
+    # Exemple :
+    #
+    # 08H00 One Piece
+    # 07H00 Naruto
+    #
+    # devient :
+    #
+    # 07H00 Naruto
+    # 08H00 One Piece
+    #
+    entries = sort_entries_by_time(
+        entries
+    )
+
+    logger.info(
+        "GEN: anime triés par heure : %s",
+        [
+            (
+                entry.get("heure", ""),
+                entry.get("name", ""),
+            )
+            for entry in entries
+        ],
+    )
+    
     W = W_BASE
 
     platform_entries = []
