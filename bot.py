@@ -195,6 +195,20 @@ PLATFORM_COLORS = {
         150,
         199,
     ),
+   
+   "amazon": (
+         25,
+         118,
+         210,
+   
+   ),
+   
+   "IQIYI": (
+          0,
+          190,
+          170,
+    
+    ),
 }
 
 
@@ -247,7 +261,8 @@ PLATFORM_KEYBOARD = ReplyKeyboardMarkup(
     [
         ["Prime video", "Crunchyroll"],
         ["Netflix", "ADN"],
-        ["Autre plateforme"],
+        ["IQIYI", "Disney"],
+        ["Amazon", "Autre plateforme"],
     ],
     resize_keyboard=True,
 )
