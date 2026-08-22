@@ -2598,56 +2598,79 @@ async def recevoir_version(
 
     return AJOUTER_OU_FIN
 
-
 # ==============================================================
-# ENVOYER LE PLANNING
+# ENVOYER PLANNING
 # ==============================================================
 
 async def send_planning(
     update,
     context,
 ):
-    try:
-        logger.info(
-            "=== DEBUT GENERATION IMAGE ==="
-        )
+    import asyncio
 
-        entries = context.user_data.get(
-            "entries",
-            [],
-        )
+    try:
+        logger.info("================================")
+        logger.info("DÉBUT GÉNÉRATION DU PLANNING")
+
+        # ------------------------------------------------------
+        # COPIES DES DONNÉES DE L'UTILISATEUR
+        # ------------------------------------------------------
+        #
+        # Très important :
+        # on copie les données avant de lancer le thread.
+        # Ainsi, si l'utilisateur modifie son planning pendant
+        # la génération, le thread travaille sur une copie stable.
+        #
 
         date = context.user_data.get(
             "date",
             "",
         )
 
+        entries = [
+            entry.copy()
+            for entry in context.user_data.get(
+                "entries",
+                [],
+            )
+        ]
+
         background_path = context.user_data.get(
-            "background_path",
+            "background_path"
         )
 
         logger.info(
-            "Nombre d'anime = %d",
-            len(entries),
-        )
-
-        logger.info(
-            "Date = %s",
+            "Date : %s",
             date,
         )
 
         logger.info(
-            "Fond = %s",
+            "Nombre d'anime : %d",
+            len(entries),
+        )
+
+        logger.info(
+            "Fond : %s",
             background_path,
         )
 
         # ------------------------------------------------------
-        # IMPORTANT :
-        # La génération PIL est exécutée dans un thread.
-        # Elle ne bloque donc plus les autres utilisateurs.
+        # GÉNÉRATION DANS UN THREAD
         # ------------------------------------------------------
+        #
+        # generate_planning_image() utilise PIL et effectue
+        # beaucoup de calculs synchrones.
+        #
+        # Si on l'exécute directement dans la fonction async,
+        # elle bloque la boucle Telegram.
+        #
+        # asyncio.to_thread() permet au bot de continuer à
+        # répondre aux autres utilisateurs pendant la génération.
+        #
 
-        import asyncio
+        logger.info(
+            "Lancement de la génération dans un thread..."
+        )
 
         image = await asyncio.to_thread(
             generate_planning_image,
@@ -2660,7 +2683,15 @@ async def send_planning(
             "Image générée avec succès"
         )
 
+        # ------------------------------------------------------
+        # PRÉPARATION DE L'IMAGE
+        # ------------------------------------------------------
+
         image.seek(0)
+
+        # ------------------------------------------------------
+        # ENVOI TELEGRAM
+        # ------------------------------------------------------
 
         await update.message.reply_photo(
             photo=image,
@@ -2674,16 +2705,26 @@ async def send_planning(
             "Image envoyée avec succès"
         )
 
+        logger.info("================================")
+
     except Exception as exc:
 
         logger.exception(
             "ERREUR GENERATION IMAGE"
         )
 
-        await update.message.reply_text(
-            "❌ Erreur pendant la génération :\n\n"
-            f"{type(exc).__name__}: {exc}"
-        )
+        try:
+
+            await update.message.reply_text(
+                "❌ Erreur pendant la génération :\n\n"
+                f"{type(exc).__name__}: {exc}"
+            )
+
+        except Exception:
+
+            logger.exception(
+                "Impossible d'envoyer le message d'erreur"
+            )
         
 # ==============================================================
 # NETTOYAGE DU FOND
