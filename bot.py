@@ -54,31 +54,18 @@ ALLOWED_USERS_FILE = os.path.join(
     "allowed_users.json",
 )
 
-# --------------------------------------------------------------
-# SÉCURITÉ
-# --------------------------------------------------------------
-# Ne mets PAS ton token directement dans le code.
-#
-# Linux / VPS :
-# export TELEGRAM_BOT_TOKEN="TON_NOUVEAU_TOKEN"
-# export ADMIN_ID="5825526159"
-#
-# Termux :
-# export TELEGRAM_BOT_TOKEN="TON_NOUVEAU_TOKEN"
-# export ADMIN_ID="5825526159"
-#
-# --------------------------------------------------------------
 
-TOKEN = os.getenv(
-    "TELEGRAM_BOT_TOKEN",
-    "8419447165:AAFBB8Bq4QY85Nf_7WbPV1j_gxVBZCSJB8M",
-).strip()
+# ==============================================================
+# TOKEN / ADMIN
+# ==============================================================
+
+TOKEN = "8419447165:AAFBB8Bq4QY85Nf_7WbPV1j_gxVBZCSJB8M"
 
 try:
     ADMIN_ID = int(
         os.getenv(
             "ADMIN_ID",
-            "5825526159",
+            "5825526159"
         )
     )
 except ValueError:
@@ -111,7 +98,6 @@ ORANGE = (240, 128, 24)
 GREY_TEXT = (210, 210, 215)
 
 W_BASE = 1728
-H_MIN = 900
 PADDING_X = 60
 
 
@@ -129,7 +115,7 @@ PLATFORM_COLORS = {
 
 
 # ==============================================================
-# ÉTATS
+# ÉTATS CONVERSATION
 # ==============================================================
 
 (
@@ -171,7 +157,6 @@ BACKGROUND_KEYBOARD = ReplyKeyboardMarkup(
         ["🚫 Aucune image"],
     ],
     resize_keyboard=True,
-    one_time_keyboard=True,
 )
 
 PLATFORM_KEYBOARD = ReplyKeyboardMarkup(
@@ -181,7 +166,6 @@ PLATFORM_KEYBOARD = ReplyKeyboardMarkup(
         ["Autre plateforme"],
     ],
     resize_keyboard=True,
-    one_time_keyboard=True,
 )
 
 VERSION_KEYBOARD = ReplyKeyboardMarkup(
@@ -190,7 +174,6 @@ VERSION_KEYBOARD = ReplyKeyboardMarkup(
         ["Les deux", "VOSTANG"],
     ],
     resize_keyboard=True,
-    one_time_keyboard=True,
 )
 
 CONTINUER_KEYBOARD = ReplyKeyboardMarkup(
@@ -199,7 +182,6 @@ CONTINUER_KEYBOARD = ReplyKeyboardMarkup(
         ["✅ Terminer et générer l'image"],
     ],
     resize_keyboard=True,
-    one_time_keyboard=True,
 )
 
 POST_GEN_KEYBOARD = ReplyKeyboardMarkup(
@@ -224,7 +206,7 @@ EDIT_FIELD_KEYBOARD = ReplyKeyboardMarkup(
 
 
 # ==============================================================
-# OUTILS
+# OUTILS POLICES
 # ==============================================================
 
 def _font(path, size):
@@ -240,9 +222,9 @@ def _font(path, size):
             path,
         )
 
-    except OSError:
-        logger.warning(
-            "Impossible de charger la police : %s",
+    except Exception:
+        logger.exception(
+            "Erreur chargement police : %s",
             path,
         )
 
@@ -252,7 +234,7 @@ def _font(path, size):
 def _text_size(draw, text, font):
     bbox = draw.textbbox(
         (0, 0),
-        text,
+        str(text),
         font=font,
     )
 
@@ -260,76 +242,6 @@ def _text_size(draw, text, font):
         bbox[2] - bbox[0],
         bbox[3] - bbox[1],
     )
-
-
-def normalize_platform(name):
-    value = (
-        str(name)
-        .strip()
-        .lower()
-        .replace("_", " ")
-    )
-
-    if value == "amazon prime":
-        return "prime video"
-
-    return value
-
-
-def _platform_color(name):
-    return PLATFORM_COLORS.get(
-        normalize_platform(name),
-        (90, 95, 105),
-    )
-
-
-def _load_logo(platform_name, target_h):
-    fname = (
-        platform_name
-        .strip()
-        .lower()
-        .replace(" ", "_")
-        .replace("+", "plus")
-    )
-
-    path = os.path.join(
-        LOGOS_DIR,
-        fname + ".png",
-    )
-
-    if not os.path.isfile(path):
-        return None
-
-    try:
-        img = Image.open(
-            path
-        ).convert("RGBA")
-
-        if img.height <= 0:
-            return None
-
-        ratio = target_h / img.height
-
-        img = img.resize(
-            (
-                max(
-                    1,
-                    int(img.width * ratio),
-                ),
-                target_h,
-            ),
-            Image.Resampling.LANCZOS,
-        )
-
-        return img
-
-    except Exception:
-        logger.exception(
-            "Logo impossible à charger : %s",
-            path,
-        )
-
-        return None
 
 
 def fit_text(
@@ -365,6 +277,88 @@ def fit_text(
         min_size,
     )
 
+
+# ==============================================================
+# PLATEFORMES
+# ==============================================================
+
+def normalize_platform(name):
+    value = (
+        str(name)
+        .strip()
+        .lower()
+        .replace("_", " ")
+    )
+
+    if value == "amazon prime":
+        return "prime video"
+
+    return value
+
+
+def _platform_color(name):
+    return PLATFORM_COLORS.get(
+        normalize_platform(name),
+        (90, 95, 105),
+    )
+
+
+def _load_logo(platform_name, target_h):
+    fname = (
+        str(platform_name)
+        .strip()
+        .lower()
+        .replace(" ", "_")
+        .replace("+", "plus")
+    )
+
+    path = os.path.join(
+        LOGOS_DIR,
+        fname + ".png",
+    )
+
+    if not os.path.isfile(path):
+        logger.warning(
+            "Logo introuvable : %s",
+            path,
+        )
+        return None
+
+    try:
+        img = Image.open(
+            path
+        ).convert("RGBA")
+
+        if img.height <= 0:
+            return None
+
+        ratio = target_h / img.height
+
+        img = img.resize(
+            (
+                max(
+                    1,
+                    int(img.width * ratio),
+                ),
+                target_h,
+            ),
+            Image.Resampling.LANCZOS,
+        )
+
+        return img
+
+    except Exception:
+        logger.exception(
+            "Impossible de charger le logo : %s",
+            path,
+        )
+
+        return None
+
+
+# ==============================================================
+# TEXTE
+# ==============================================================
 
 def clean_title(title):
     title = " ".join(
@@ -410,7 +404,7 @@ def get_version_label(version):
 
 
 # ==============================================================
-# UTILISATEURS
+# UTILISATEURS AUTORISÉS
 # ==============================================================
 
 def _load_allowed_users():
@@ -427,6 +421,9 @@ def _load_allowed_users():
             encoding="utf-8",
         ) as f:
             data = json.load(f)
+
+        if not isinstance(data, list):
+            return set()
 
         return {
             int(x)
@@ -454,6 +451,7 @@ def _save_allowed_users(users):
                 sorted(users),
                 f,
                 indent=2,
+                ensure_ascii=False,
             )
 
     except Exception:
@@ -480,13 +478,12 @@ def is_authorized(user_id):
 def _decode_html(data):
 
     if isinstance(data, bytes):
-
         return data.decode(
             "utf-8",
             errors="ignore",
         )
 
-    return data
+    return str(data)
 
 
 def _absolute_url(url):
@@ -551,14 +548,14 @@ def _extract_nautiljon_search_results(html):
 
     results = []
 
-    link_patterns = [
+    patterns = [
         r'href=["\']([^"\']*/animes/[^"\']+)["\']',
         r'href=["\'](https?://[^"\']*nautiljon\.com/animes/[^"\']+)["\']',
     ]
 
     links = []
 
-    for pattern in link_patterns:
+    for pattern in patterns:
 
         for match in re.findall(
             pattern,
@@ -566,9 +563,7 @@ def _extract_nautiljon_search_results(html):
             re.IGNORECASE,
         ):
 
-            url = _absolute_url(
-                match
-            )
+            url = _absolute_url(match)
 
             if not url:
                 continue
@@ -606,9 +601,7 @@ def _extract_nautiljon_search_results(html):
 
                 page = response.read()
 
-            page = _decode_html(
-                page
-            )
+            page = _decode_html(page)
 
             title = None
 
@@ -627,29 +620,30 @@ def _extract_nautiljon_search_results(html):
                     | re.DOTALL,
                 )
 
-                if match:
+                if not match:
+                    continue
 
-                    title = re.sub(
-                        r"<[^>]+>",
-                        "",
-                        match.group(1),
+                title = re.sub(
+                    r"<[^>]+>",
+                    "",
+                    match.group(1),
+                )
+
+                title = (
+                    title
+                    .replace(
+                        "&amp;",
+                        "&",
                     )
-
-                    title = (
-                        title
-                        .replace(
-                            "&amp;",
-                            "&",
-                        )
-                        .replace(
-                            "&#039;",
-                            "'",
-                        )
-                        .strip()
+                    .replace(
+                        "&#039;",
+                        "'",
                     )
+                    .strip()
+                )
 
-                    if title:
-                        break
+                if title:
+                    break
 
             image = None
 
@@ -678,12 +672,10 @@ def _extract_nautiljon_search_results(html):
                 if not candidate:
                     continue
 
-                candidate_lower = (
-                    candidate.lower()
-                )
+                lower = candidate.lower()
 
                 if any(
-                    word in candidate_lower
+                    word in lower
                     for word in (
                         "logo",
                         "favicon",
@@ -710,7 +702,7 @@ def _extract_nautiljon_search_results(html):
         except Exception as exc:
 
             logger.debug(
-                "Impossible de lire %s : %s",
+                "Lecture Nautiljon impossible %s : %s",
                 anime_url,
                 exc,
             )
@@ -793,10 +785,7 @@ def search_nautiljon_image_sync(title):
                 )
 
                 if clean_lower == result_name:
-
-                    return result[
-                        "image"
-                    ]
+                    return result["image"]
 
             for result in results:
 
@@ -812,10 +801,7 @@ def search_nautiljon_image_sync(title):
                     clean_lower in result_name
                     or result_name in clean_lower
                 ):
-
-                    return result[
-                        "image"
-                    ]
+                    return result["image"]
 
             return results[0]["image"]
 
@@ -858,16 +844,12 @@ async def choose_nautiljon_background(
     if not entries:
         return None
 
-    candidates = list(
-        entries
-    )
+    candidates = list(entries)
 
-    random.shuffle(
-        candidates
-    )
+    random.shuffle(candidates)
 
     logger.info(
-        "Recherche Nautiljon parmi %d anime.",
+        "Recherche Nautiljon parmi %d anime",
         len(candidates),
     )
 
@@ -881,11 +863,6 @@ async def choose_nautiljon_background(
         if not anime_name:
             continue
 
-        logger.info(
-            "Recherche affiche Nautiljon : %s",
-            anime_name,
-        )
-
         try:
 
             image_url = (
@@ -896,32 +873,23 @@ async def choose_nautiljon_background(
 
             if image_url:
 
-                logger.info(
-                    "Affiche trouvée pour : %s",
-                    anime_name,
-                )
-
-                # IMPORTANT :
-                # on retourne bien l'URL
-                # dans un dictionnaire.
                 return {
                     "url": image_url,
                     "anime": anime_name,
                 }
 
         except Exception:
-
             logger.exception(
-                "Erreur recherche Nautiljon : %s",
+                "Erreur Nautiljon pour %s",
                 anime_name,
             )
 
-    logger.warning(
-        "Aucune affiche Nautiljon trouvée."
-    )
-
     return None
 
+
+# ==============================================================
+# TÉLÉCHARGEMENT IMAGE
+# ==============================================================
 
 async def download_image_url(
     url,
@@ -972,7 +940,6 @@ async def download_image_url(
             destination,
             "wb",
         ) as f:
-
             f.write(data)
 
     await loop.run_in_executor(
@@ -991,9 +958,7 @@ async def download_image_url(
     except Exception:
 
         try:
-            os.remove(
-                destination
-            )
+            os.remove(destination)
         except OSError:
             pass
 
@@ -1102,7 +1067,7 @@ def _load_background(
 
 
 # ==============================================================
-# GÉNÉRATION IMAGE
+# GÉNÉRATION DU PLANNING
 # ==============================================================
 
 def generate_planning_image(
@@ -1110,22 +1075,15 @@ def generate_planning_image(
     entries,
     background_path=None,
 ):
-    logger.info("GEN: entrée dans generate_planning_image")
 
     logger.info(
-        "GEN: date=%s",
-        date_str,
+        "GEN: début génération"
     )
 
-    logger.info(
-        "GEN: entries=%s",
-        entries,
-    )
-
-    logger.info(
-        "GEN: background=%s",
-        background_path,
-    )
+    if not entries:
+        raise ValueError(
+            "Aucun anime à afficher."
+        )
 
     W = W_BASE
 
@@ -1133,6 +1091,7 @@ def generate_planning_image(
     vf_entries = []
 
     for entry in entries:
+
         version = normalize_version(
             entry.get(
                 "version",
@@ -1163,11 +1122,12 @@ def generate_planning_image(
             "Autre",
         ).strip()
 
+        if not platform:
+            platform = "Autre"
+
         if platform not in by_platform:
 
-            by_platform[
-                platform
-            ] = []
+            by_platform[platform] = []
 
             platforms_order.append(
                 platform
@@ -1212,18 +1172,22 @@ def generate_planning_image(
         W * 4 / 3
     )
 
-    if content_h < H_ratio:
+    H = max(
+        H_ratio,
+        content_h,
+    )
 
-        H = H_ratio
-
-    else:
-
-        H = content_h
-
+    if content_h > H_ratio:
         W = round(
             H * 3 / 4
         )
-    logger.info("GEN: création du canvas W=%s H=%s", W, content_h)
+
+    logger.info(
+        "GEN: canvas W=%s H=%s content_h=%s",
+        W,
+        H,
+        content_h,
+    )
 
     content = Image.new(
         "RGBA",
@@ -1242,8 +1206,6 @@ def generate_planning_image(
     draw = ImageDraw.Draw(
         content
     )
-    
-    logger.info("GEN: canvas créé")
 
     f_title = _font(
         FONT_BOLD,
@@ -1328,7 +1290,7 @@ def generate_planning_image(
 
     date_font = fit_text(
         draw,
-        date_str.upper(),
+        str(date_str).upper(),
         FONT_BOLD,
         W - PADDING_X - prefix_w - 20,
         40,
@@ -1340,7 +1302,7 @@ def generate_planning_image(
             PADDING_X + prefix_w + 10,
             cy,
         ),
-        date_str.upper(),
+        str(date_str).upper(),
         font=date_font,
         fill=BLUE_ACCENT,
     )
@@ -1410,13 +1372,19 @@ def generate_planning_image(
 
                 logo = logo.resize(
                     (
-                        int(
-                            logo.width
-                            * ratio
+                        max(
+                            1,
+                            int(
+                                logo.width
+                                * ratio
+                            ),
                         ),
-                        int(
-                            logo.height
-                            * ratio
+                        max(
+                            1,
+                            int(
+                                logo.height
+                                * ratio
+                            ),
                         ),
                     ),
                     Image.Resampling.LANCZOS,
@@ -1502,16 +1470,26 @@ def generate_planning_image(
                     col_ep,
                     cy,
                 ),
-                f"EPISODE {entry.get('episode', '')}",
+                (
+                    "ÉPISODE "
+                    + str(
+                        entry.get(
+                            "episode",
+                            "",
+                        )
+                    )
+                ),
                 font=f_row,
                 fill=WHITE,
             )
 
             time_font = fit_text(
                 draw,
-                entry.get(
-                    "heure",
-                    "",
+                str(
+                    entry.get(
+                        "heure",
+                        "",
+                    )
                 ).upper(),
                 FONT_BOLD,
                 W - col_time - PADDING_X,
@@ -1524,9 +1502,11 @@ def generate_planning_image(
                     col_time,
                     cy,
                 ),
-                entry.get(
-                    "heure",
-                    "",
+                str(
+                    entry.get(
+                        "heure",
+                        "",
+                    )
                 ).upper(),
                 font=time_font,
                 fill=BLUE_ACCENT,
@@ -1577,14 +1557,8 @@ def generate_planning_image(
         cy += 140
 
         col_name = PADDING_X + 65
-
-        col_ep = int(
-            W * 0.62
-        )
-
-        col_time = int(
-            W * 0.84
-        )
+        col_ep = int(W * 0.62)
+        col_time = int(W * 0.84)
 
         for entry in vf_entries:
 
@@ -1607,9 +1581,11 @@ def generate_planning_image(
             )
 
             initial = (
-                entry.get(
-                    "platform",
-                    "?",
+                str(
+                    entry.get(
+                        "platform",
+                        "?",
+                    )
                 )[:1]
                 .upper()
             )
@@ -1664,7 +1640,15 @@ def generate_planning_image(
                     col_ep,
                     cy,
                 ),
-                f"ÉPISODE {entry.get('episode', '')}",
+                (
+                    "ÉPISODE "
+                    + str(
+                        entry.get(
+                            "episode",
+                            "",
+                        )
+                    )
+                ),
                 font=f_row,
                 fill=WHITE,
             )
@@ -1674,9 +1658,11 @@ def generate_planning_image(
                     col_time,
                     cy,
                 ),
-                entry.get(
-                    "heure",
-                    "",
+                str(
+                    entry.get(
+                        "heure",
+                        "",
+                    )
                 ).upper(),
                 font=f_row,
                 fill=BLUE_ACCENT,
@@ -1706,7 +1692,7 @@ def generate_planning_image(
         except Exception:
 
             logger.exception(
-                "Erreur fond"
+                "Erreur chargement fond"
             )
 
             background = Image.new(
@@ -1749,8 +1735,7 @@ def generate_planning_image(
 
     offset_y = max(
         0,
-        (H - content_h)
-        // 2,
+        (H - content_h) // 2,
     )
 
     background.paste(
@@ -1795,6 +1780,10 @@ def generate_planning_image(
         fill=GREY_TEXT,
     )
 
+    # ----------------------------------------------------------
+    # SORTIE PNG
+    # ----------------------------------------------------------
+
     buffer = io.BytesIO()
 
     background.save(
@@ -1805,16 +1794,19 @@ def generate_planning_image(
 
     buffer.seek(0)
 
+    logger.info(
+        "GEN: image PNG créée, taille=%d octets",
+        len(buffer.getvalue()),
+    )
+
     return buffer
 
 
 # ==============================================================
-# NETTOYAGE
+# NETTOYAGE DU FOND
 # ==============================================================
 
-def cleanup_background(
-    context,
-):
+def cleanup_background(context):
 
     path = context.user_data.get(
         "background_path"
@@ -1829,7 +1821,10 @@ def cleanup_background(
             os.remove(path)
 
         except OSError:
-            pass
+            logger.warning(
+                "Impossible de supprimer %s",
+                path,
+            )
 
     context.user_data[
         "background_path"
@@ -1837,7 +1832,7 @@ def cleanup_background(
 
 
 # ==============================================================
-# MENU
+# MENU PRINCIPAL
 # ==============================================================
 
 async def start(
@@ -1848,8 +1843,7 @@ async def start(
     await update.message.reply_text(
         "👋 Salut !\n\n"
         "Je suis ton générateur de planning anime.\n\n"
-        "Utilise les boutons ci-dessous "
-        "ou les commandes.",
+        "Utilise les boutons ci-dessous.",
         reply_markup=MAIN_MENU,
     )
 
@@ -1900,7 +1894,7 @@ async def menu_cancel(
 
 
 # ==============================================================
-# CRÉATION
+# CRÉATION PLANNING
 # ==============================================================
 
 async def createplanning(
@@ -1913,15 +1907,14 @@ async def createplanning(
     ):
 
         await update.message.reply_text(
-            "⛔ Tu n'es pas autorisé à utiliser ce bot.",
+            "⛔ Tu n'es pas autorisé "
+            "à utiliser ce bot.",
             reply_markup=MAIN_MENU,
         )
 
         return ConversationHandler.END
 
-    cleanup_background(
-        context
-    )
+    cleanup_background(context)
 
     context.user_data.clear()
 
@@ -1967,10 +1960,6 @@ async def recevoir_date_edit(
 
         return DATE
 
-    # ----------------------------------------------------------
-    # Modification de date
-    # ----------------------------------------------------------
-
     if context.user_data.get(
         "changing_date"
     ):
@@ -1983,9 +1972,22 @@ async def recevoir_date_edit(
             "changing_date"
         ] = False
 
+        # IMPORTANT :
+        # on régénère immédiatement après
+        # la modification de la date.
+
         await update.message.reply_text(
-            "✅ Date modifiée.\n\n"
-            "Tu peux maintenant régénérer l'image.",
+            "✅ Date modifiée.\n"
+            "🔄 Régénération de l'image..."
+        )
+
+        await send_planning(
+            update,
+            context,
+        )
+
+        await update.message.reply_text(
+            "Que veux-tu faire ensuite ?",
             reply_markup=POST_GEN_KEYBOARD,
         )
 
@@ -1996,11 +1998,11 @@ async def recevoir_date_edit(
     ] = date
 
     await update.message.reply_text(
-        "🖼️ Que veux-tu faire pour l'image de fond ?\n\n"
-        "🖼️ Envoyer une image : tu choisis l'image.\n"
-        "🔎 Chercher sur Nautiljon : le bot choisit "
-        "un anime du planning et cherche son affiche.\n"
-        "🚫 Aucune image : fond uni.",
+        "🖼️ Que veux-tu faire pour "
+        "l'image de fond ?\n\n"
+        "🖼️ Envoyer une image\n"
+        "🔎 Chercher sur Nautiljon\n"
+        "🚫 Aucune image",
         reply_markup=BACKGROUND_KEYBOARD,
     )
 
@@ -2016,10 +2018,14 @@ async def image_choice(
     context,
 ):
 
-    choice = update.message.text.strip().lower()
+    choice = (
+        update.message.text
+        .strip()
+        .lower()
+    )
 
     # ----------------------------------------------------------
-    # ENVOYER UNE IMAGE
+    # UPLOAD
     # ----------------------------------------------------------
 
     if "envoyer" in choice:
@@ -2030,11 +2036,15 @@ async def image_choice(
 
         context.user_data[
             "changing_background"
-        ] = False
+        ] = context.user_data.get(
+            "changing_background",
+            False,
+        )
 
         await update.message.reply_text(
-            "🖼️ Envoie maintenant l'image "
-            "que tu veux utiliser comme fond.",
+            "🖼️ Envoie maintenant "
+            "l'image que tu veux utiliser "
+            "comme fond.",
             reply_markup=ReplyKeyboardRemove(),
         )
 
@@ -2054,10 +2064,6 @@ async def image_choice(
             "background_path"
         ] = None
 
-        # ------------------------------------------------------
-        # Si on modifie le fond après génération
-        # ------------------------------------------------------
-
         if context.user_data.get(
             "changing_background"
         ):
@@ -2074,15 +2080,16 @@ async def image_choice(
             if not entries:
 
                 await update.message.reply_text(
-                    "❌ Aucun anime dans le planning.",
+                    "❌ Aucun anime dans "
+                    "le planning.",
                     reply_markup=POST_GEN_KEYBOARD,
                 )
 
                 return EDIT_MENU
 
             await update.message.reply_text(
-                "🔎 Recherche d'une nouvelle affiche "
-                "sur Nautiljon..."
+                "🔎 Recherche d'une nouvelle "
+                "affiche sur Nautiljon..."
             )
 
             try:
@@ -2095,20 +2102,16 @@ async def image_choice(
 
                 if result:
 
-                    image_url = result[
-                        "url"
-                    ]
-
                     path = os.path.join(
                         tempfile.gettempdir(),
                         (
-                            f"nautiljon_bg_"
+                            "planning_nautiljon_"
                             f"{update.effective_chat.id}.jpg"
                         ),
                     )
 
                     await download_image_url(
-                        image_url,
+                        result["url"],
                         path,
                     )
 
@@ -2117,8 +2120,13 @@ async def image_choice(
                     ] = path
 
                     await update.message.reply_text(
-                        "✅ Nouvelle affiche trouvée !",
-                        reply_markup=POST_GEN_KEYBOARD,
+                        "✅ Nouvelle affiche trouvée !\n"
+                        "🔄 Régénération de l'image..."
+                    )
+
+                    await send_planning(
+                        update,
+                        context,
                     )
 
                 else:
@@ -2143,9 +2151,9 @@ async def image_choice(
             return EDIT_MENU
 
         await update.message.reply_text(
-            "🔎 D'accord. Le bot cherchera automatiquement "
-            "une affiche sur Nautiljon après que tu auras "
-            "sélectionné les anime.",
+            "🔎 D'accord. Le bot cherchera "
+            "automatiquement une affiche "
+            "sur Nautiljon après les anime.",
             reply_markup=ReplyKeyboardRemove(),
         )
 
@@ -2168,10 +2176,6 @@ async def image_choice(
             "background_path"
         ] = None
 
-        # ------------------------------------------------------
-        # Modification du fond après génération
-        # ------------------------------------------------------
-
         if context.user_data.get(
             "changing_background"
         ):
@@ -2181,7 +2185,17 @@ async def image_choice(
             ] = False
 
             await update.message.reply_text(
-                "🚫 Fond supprimé.",
+                "🚫 Fond supprimé.\n"
+                "🔄 Régénération de l'image..."
+            )
+
+            await send_planning(
+                update,
+                context,
+            )
+
+            await update.message.reply_text(
+                "Que veux-tu faire ensuite ?",
                 reply_markup=POST_GEN_KEYBOARD,
             )
 
@@ -2224,12 +2238,14 @@ async def image_upload(
 
     photo = update.message.photo[-1]
 
-    telegram_file = await photo.get_file()
+    telegram_file = (
+        await photo.get_file()
+    )
 
     path = os.path.join(
         tempfile.gettempdir(),
         (
-            f"planning_bg_"
+            "planning_bg_"
             f"{update.effective_chat.id}_"
             f"{random.randint(1000, 9999)}.jpg"
         ),
@@ -2246,11 +2262,11 @@ async def image_upload(
     if (
         old
         and os.path.isfile(old)
+        and old != path
     ):
 
         try:
             os.remove(old)
-
         except OSError:
             pass
 
@@ -2262,10 +2278,6 @@ async def image_upload(
         "image_mode"
     ] = "upload"
 
-    # ----------------------------------------------------------
-    # Modification du fond
-    # ----------------------------------------------------------
-
     if context.user_data.get(
         "changing_background"
     ):
@@ -2275,7 +2287,17 @@ async def image_upload(
         ] = False
 
         await update.message.reply_text(
-            "✅ Nouveau fond enregistré !",
+            "✅ Nouveau fond enregistré !\n"
+            "🔄 Régénération de l'image..."
+        )
+
+        await send_planning(
+            update,
+            context,
+        )
+
+        await update.message.reply_text(
+            "Que veux-tu faire ensuite ?",
             reply_markup=POST_GEN_KEYBOARD,
         )
 
@@ -2314,7 +2336,9 @@ async def recevoir_platform(
     context,
 ):
 
-    platform = update.message.text.strip()
+    platform = (
+        update.message.text.strip()
+    )
 
     if platform == "Autre plateforme":
 
@@ -2344,7 +2368,9 @@ async def recevoir_custom_platform(
     context,
 ):
 
-    platform = update.message.text.strip()
+    platform = (
+        update.message.text.strip()
+    )
 
     if not platform:
 
@@ -2368,7 +2394,7 @@ async def recevoir_custom_platform(
 
 
 # ==============================================================
-# ANIME
+# NOM
 # ==============================================================
 
 async def recevoir_name(
@@ -2376,7 +2402,9 @@ async def recevoir_name(
     context,
 ):
 
-    name = update.message.text.strip()
+    name = (
+        update.message.text.strip()
+    )
 
     if not name:
 
@@ -2397,12 +2425,18 @@ async def recevoir_name(
     return EPISODE
 
 
+# ==============================================================
+# ÉPISODE
+# ==============================================================
+
 async def recevoir_episode(
     update,
     context,
 ):
 
-    episode = update.message.text.strip()
+    episode = (
+        update.message.text.strip()
+    )
 
     if not episode:
 
@@ -2424,12 +2458,18 @@ async def recevoir_episode(
     return HEURE
 
 
+# ==============================================================
+# HEURE
+# ==============================================================
+
 async def recevoir_heure(
     update,
     context,
 ):
 
-    heure = update.message.text.strip()
+    heure = (
+        update.message.text.strip()
+    )
 
     if not heure:
 
@@ -2477,7 +2517,8 @@ async def recevoir_version(
     if value not in valid:
 
         await update.message.reply_text(
-            "❌ Choisis une version avec les boutons.",
+            "❌ Choisis une version "
+            "avec les boutons.",
             reply_markup=VERSION_KEYBOARD,
         )
 
@@ -2519,13 +2560,664 @@ async def recevoir_version(
 
 
 # ==============================================================
-# AJOUT / FIN
+# ENVOYER LE PLANNING
 # ==============================================================
 
-async def ajouter_ou_fin(
+async def send_planning(
     update,
     context,
 ):
+
+    try:
+
+        entries = context.user_data.get(
+            "entries",
+            [],
+        )
+
+        date_str = context.user_data.get(
+            "date",
+            "",
+        )
+
+        background_path = (
+            context.user_data.get(
+                "background_path"
+            )
+        )
+
+        logger.info(
+            "=== GENERATION PLANNING ==="
+        )
+
+        logger.info(
+            "Date : %s",
+            date_str,
+        )
+
+        logger.info(
+            "Anime : %d",
+            len(entries),
+        )
+
+        logger.info(
+            "Fond : %s",
+            background_path,
+        )
+
+        if not entries:
+
+            raise ValueError(
+                "Aucun anime à générer."
+            )
+
+        image = generate_planning_image(
+            date_str,
+            entries,
+            background_path,
+        )
+
+        image.seek(0)
+
+        # Important :
+        # on crée un nouveau BytesIO à chaque génération.
+        image_data = io.BytesIO(
+            image.getvalue()
+        )
+
+        image_data.name = (
+            "planning.png"
+        )
+
+        image_data.seek(0)
+
+        await update.message.reply_photo(
+            photo=image_data,
+            caption=(
+                "📌 Planning des sorties "
+                f"animes du {date_str}"
+            ),
+        )
+
+        logger.info(
+            "=== IMAGE ENVOYÉE ==="
+        )
+
+    except Exception as exc:
+
+        logger.exception(
+            "ERREUR GENERATION IMAGE"
+        )
+
+        await update.message.reply_text(
+            "❌ Erreur pendant la génération :\n\n"
+            f"{type(exc).__name__}: {exc}"
+        )
+        
+# ==============================================================
+# NETTOYAGE DU FOND
+# ==============================================================
+
+def cleanup_background(context):
+    path = context.user_data.get("background_path")
+
+    if path and os.path.isfile(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    context.user_data["background_path"] = None
+
+
+# ==============================================================
+# MENU PRINCIPAL
+# ==============================================================
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    await update.message.reply_text(
+        "👋 Salut !\n\n"
+        "Je suis ton générateur de planning anime.\n\n"
+        "Utilise les boutons ci-dessous.",
+        reply_markup=MAIN_MENU,
+    )
+
+
+async def cmd_id(update, context):
+
+    await update.message.reply_text(
+        f"🆔 Ton ID Telegram : {update.effective_user.id}",
+        reply_markup=MAIN_MENU,
+    )
+
+
+async def menu_id(update, context):
+
+    return await cmd_id(update, context)
+
+
+async def menu_users(update, context):
+
+    return await cmd_utilisateurs(update, context)
+
+
+async def menu_cancel(update, context):
+
+    return await annuler(update, context)
+
+
+# ==============================================================
+# CRÉATION D'UN PLANNING
+# ==============================================================
+
+async def createplanning(update, context):
+
+    if not is_authorized(update.effective_user.id):
+
+        await update.message.reply_text(
+            "⛔ Tu n'es pas autorisé à utiliser ce bot.",
+            reply_markup=MAIN_MENU,
+        )
+
+        return ConversationHandler.END
+
+    cleanup_background(context)
+
+    context.user_data.clear()
+
+    context.user_data["entries"] = []
+    context.user_data["background_path"] = None
+    context.user_data["image_mode"] = None
+
+    await update.message.reply_text(
+        "🗓️ Création d'un nouveau planning.\n\n"
+        "Quelle est la date à afficher ?\n\n"
+        "Exemple :\n"
+        "Vendredi 21 Août",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return DATE
+
+
+# ==============================================================
+# DATE
+# ==============================================================
+
+async def recevoir_date_edit(update, context):
+
+    date = update.message.text.strip()
+
+    if not date:
+
+        await update.message.reply_text(
+            "❌ La date ne peut pas être vide."
+        )
+
+        return DATE
+
+    # Modification de la date
+    if context.user_data.get("changing_date"):
+
+        context.user_data["date"] = date
+        context.user_data["changing_date"] = False
+
+        await update.message.reply_text(
+            "✅ Date modifiée.\n\n"
+            "Tu peux maintenant régénérer l'image.",
+            reply_markup=POST_GEN_KEYBOARD,
+        )
+
+        return EDIT_MENU
+
+    context.user_data["date"] = date
+
+    await update.message.reply_text(
+        "🖼️ Que veux-tu faire pour l'image de fond ?\n\n"
+        "🖼️ Envoyer une image\n"
+        "🔎 Chercher sur Nautiljon\n"
+        "🚫 Aucune image",
+        reply_markup=BACKGROUND_KEYBOARD,
+    )
+
+    return IMAGE_CHOICE
+
+
+# ==============================================================
+# CHOIX DU FOND
+# ==============================================================
+
+async def image_choice(update, context):
+
+    choice = update.message.text.strip().lower()
+
+    # ----------------------------------------------------------
+    # IMAGE PERSONNELLE
+    # ----------------------------------------------------------
+
+    if "envoyer" in choice:
+
+        context.user_data["image_mode"] = "upload"
+        context.user_data["changing_background"] = False
+
+        await update.message.reply_text(
+            "🖼️ Envoie maintenant l'image "
+            "que tu veux utiliser comme fond.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return IMAGE_UPLOAD
+
+    # ----------------------------------------------------------
+    # NAUTILJON
+    # ----------------------------------------------------------
+
+    if "nautiljon" in choice:
+
+        context.user_data["image_mode"] = "nautiljon"
+        context.user_data["background_path"] = None
+
+        # Modification du fond
+        if context.user_data.get("changing_background"):
+
+            context.user_data["changing_background"] = False
+
+            entries = context.user_data.get("entries", [])
+
+            if not entries:
+
+                await update.message.reply_text(
+                    "❌ Aucun anime dans le planning.",
+                    reply_markup=POST_GEN_KEYBOARD,
+                )
+
+                return EDIT_MENU
+
+            await update.message.reply_text(
+                "🔎 Recherche d'une nouvelle affiche "
+                "sur Nautiljon..."
+            )
+
+            try:
+
+                result = await choose_nautiljon_background(
+                    context
+                )
+
+                if result:
+
+                    image_url = result["url"]
+
+                    path = os.path.join(
+                        tempfile.gettempdir(),
+                        (
+                            f"nautiljon_bg_"
+                            f"{update.effective_chat.id}.jpg"
+                        ),
+                    )
+
+                    await download_image_url(
+                        image_url,
+                        path,
+                    )
+
+                    context.user_data[
+                        "background_path"
+                    ] = path
+
+                    await update.message.reply_text(
+                        "✅ Nouvelle affiche trouvée !",
+                        reply_markup=POST_GEN_KEYBOARD,
+                    )
+
+                else:
+
+                    await update.message.reply_text(
+                        "⚠️ Aucune affiche trouvée.",
+                        reply_markup=POST_GEN_KEYBOARD,
+                    )
+
+            except Exception as exc:
+
+                logger.exception(
+                    "Erreur modification fond Nautiljon"
+                )
+
+                await update.message.reply_text(
+                    "❌ Impossible de récupérer "
+                    "l'affiche.\n\n"
+                    f"{type(exc).__name__}: {exc}",
+                    reply_markup=POST_GEN_KEYBOARD,
+                )
+
+            return EDIT_MENU
+
+        await update.message.reply_text(
+            "🔎 D'accord. Le bot cherchera automatiquement "
+            "une affiche sur Nautiljon après l'ajout "
+            "des anime.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return await ask_platform(update, context)
+
+    # ----------------------------------------------------------
+    # AUCUN FOND
+    # ----------------------------------------------------------
+
+    if "aucune" in choice:
+
+        context.user_data["image_mode"] = "none"
+        context.user_data["background_path"] = None
+
+        if context.user_data.get("changing_background"):
+
+            context.user_data["changing_background"] = False
+
+            await update.message.reply_text(
+                "🚫 Fond supprimé.",
+                reply_markup=POST_GEN_KEYBOARD,
+            )
+
+            return EDIT_MENU
+
+        await update.message.reply_text(
+            "🚫 Aucun fond.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return await ask_platform(update, context)
+
+    await update.message.reply_text(
+        "❌ Choisis l'une des trois options.",
+        reply_markup=BACKGROUND_KEYBOARD,
+    )
+
+    return IMAGE_CHOICE
+
+
+# ==============================================================
+# RÉCEPTION DE L'IMAGE
+# ==============================================================
+
+async def image_upload(update, context):
+
+    if not update.message.photo:
+
+        await update.message.reply_text(
+            "📷 Envoie une photo."
+        )
+
+        return IMAGE_UPLOAD
+
+    try:
+
+        photo = update.message.photo[-1]
+
+        telegram_file = await photo.get_file()
+
+        path = os.path.join(
+            tempfile.gettempdir(),
+            (
+                f"planning_bg_"
+                f"{update.effective_chat.id}_"
+                f"{random.randint(1000, 9999)}.jpg"
+            ),
+        )
+
+        await telegram_file.download_to_drive(path)
+
+        old = context.user_data.get(
+            "background_path"
+        )
+
+        if old and os.path.isfile(old):
+
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+
+        context.user_data["background_path"] = path
+        context.user_data["image_mode"] = "upload"
+
+        if context.user_data.get(
+            "changing_background"
+        ):
+
+            context.user_data[
+                "changing_background"
+            ] = False
+
+            await update.message.reply_text(
+                "✅ Nouveau fond enregistré !",
+                reply_markup=POST_GEN_KEYBOARD,
+            )
+
+            return EDIT_MENU
+
+        await update.message.reply_text(
+            "✅ Image enregistrée !",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return await ask_platform(update, context)
+
+    except Exception as exc:
+
+        logger.exception(
+            "Erreur réception image"
+        )
+
+        await update.message.reply_text(
+            "❌ Impossible d'enregistrer l'image.\n\n"
+            f"{type(exc).__name__}: {exc}"
+        )
+
+        return IMAGE_UPLOAD
+
+
+# ==============================================================
+# PLATEFORME
+# ==============================================================
+
+async def ask_platform(update, context):
+
+    await update.message.reply_text(
+        "📡 Plateforme de diffusion ?",
+        reply_markup=PLATFORM_KEYBOARD,
+    )
+
+    return PLATFORM
+
+
+async def recevoir_platform(update, context):
+
+    platform = update.message.text.strip()
+
+    if platform == "Autre plateforme":
+
+        await update.message.reply_text(
+            "📡 Écris le nom de la plateforme.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return CUSTOM_PLATFORM
+
+    context.user_data["current"] = {
+        "platform": platform,
+    }
+
+    await update.message.reply_text(
+        "📝 Nom de l'anime ?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return NAME
+
+
+async def recevoir_custom_platform(update, context):
+
+    platform = update.message.text.strip()
+
+    if not platform:
+
+        await update.message.reply_text(
+            "❌ Le nom ne peut pas être vide."
+        )
+
+        return CUSTOM_PLATFORM
+
+    context.user_data["current"] = {
+        "platform": platform,
+    }
+
+    await update.message.reply_text(
+        "📝 Nom de l'anime ?"
+    )
+
+    return NAME
+
+
+# ==============================================================
+# NOM
+# ==============================================================
+
+async def recevoir_name(update, context):
+
+    name = update.message.text.strip()
+
+    if not name:
+
+        await update.message.reply_text(
+            "❌ Le nom ne peut pas être vide."
+        )
+
+        return NAME
+
+    context.user_data["current"]["name"] = name
+
+    await update.message.reply_text(
+        "📺 Numéro de l'épisode ?"
+    )
+
+    return EPISODE
+
+
+# ==============================================================
+# ÉPISODE
+# ==============================================================
+
+async def recevoir_episode(update, context):
+
+    episode = update.message.text.strip()
+
+    if not episode:
+
+        await update.message.reply_text(
+            "❌ Indique un numéro."
+        )
+
+        return EPISODE
+
+    context.user_data["current"]["episode"] = episode
+
+    await update.message.reply_text(
+        "🕐 Heure de diffusion ?\n"
+        "Exemple : 16H30"
+    )
+
+    return HEURE
+
+
+# ==============================================================
+# HEURE
+# ==============================================================
+
+async def recevoir_heure(update, context):
+
+    heure = update.message.text.strip()
+
+    if not heure:
+
+        await update.message.reply_text(
+            "❌ L'heure ne peut pas être vide."
+        )
+
+        return HEURE
+
+    context.user_data["current"]["heure"] = heure
+
+    await update.message.reply_text(
+        "🎙️ Version ?\n\n"
+        "VF = uniquement sortie VF\n"
+        "VO = sortie plateforme\n"
+        "Les deux = VF + VO",
+        reply_markup=VERSION_KEYBOARD,
+    )
+
+    return VERSION
+
+
+# ==============================================================
+# VERSION
+# ==============================================================
+
+async def recevoir_version(update, context):
+
+    value = normalize_version(
+        update.message.text
+    )
+
+    valid = {
+        "VF",
+        "VO",
+        "VOSTANG",
+        "LES DEUX",
+    }
+
+    if value not in valid:
+
+        await update.message.reply_text(
+            "❌ Choisis une version avec les boutons.",
+            reply_markup=VERSION_KEYBOARD,
+        )
+
+        return VERSION
+
+    current = context.user_data["current"]
+
+    current["version"] = value
+
+    context.user_data["entries"].append(
+        current.copy()
+    )
+
+    recap = current.copy()
+
+    context.user_data["current"] = {}
+
+    await update.message.reply_text(
+        "✅ Anime ajouté !\n\n"
+        f"🎬 {recap['name']}\n"
+        f"📺 Épisode : {recap['episode']}\n"
+        f"🕐 Heure : {recap['heure']}\n"
+        f"📡 Plateforme : {recap['platform']}\n"
+        f"🎙️ Version : "
+        f"{get_version_label(recap['version'])}\n\n"
+        "Que veux-tu faire ?",
+        reply_markup=CONTINUER_KEYBOARD,
+    )
+
+    return AJOUTER_OU_FIN
+
+
+# ==============================================================
+# AJOUTER OU TERMINER
+# ==============================================================
+
+async def ajouter_ou_fin(update, context):
 
     choice = update.message.text.strip().lower()
 
@@ -2556,15 +3248,12 @@ async def ajouter_ou_fin(
             return AJOUTER_OU_FIN
 
         # ------------------------------------------------------
-        # NAUTILJON
+        # RECHERCHE NAUTILJON
         # ------------------------------------------------------
 
-        if (
-            context.user_data.get(
-                "image_mode"
-            )
-            == "nautiljon"
-        ):
+        if context.user_data.get(
+            "image_mode"
+        ) == "nautiljon":
 
             await update.message.reply_text(
                 "🔎 Recherche d'une affiche sur Nautiljon..."
@@ -2572,23 +3261,13 @@ async def ajouter_ou_fin(
 
             try:
 
-                result = (
-                    await choose_nautiljon_background(
-                        context
-                    )
+                result = await choose_nautiljon_background(
+                    context
                 )
 
                 if result:
 
-                    # IMPORTANT :
-                    # choose_nautiljon_background()
-                    # renvoie un dictionnaire.
-                    #
-                    # On récupère l'URL ici.
-
-                    image_url = result[
-                        "url"
-                    ]
+                    image_url = result["url"]
 
                     anime_found = result.get(
                         "anime",
@@ -2629,15 +3308,16 @@ async def ajouter_ou_fin(
                         "avec un fond uni."
                     )
 
-            except Exception:
+            except Exception as exc:
 
                 logger.exception(
                     "Erreur Nautiljon"
                 )
 
                 await update.message.reply_text(
-                    "⚠️ Recherche Nautiljon impossible. "
-                    "Le planning sera généré sans image."
+                    "⚠️ Recherche Nautiljon impossible.\n"
+                    "Le planning sera généré sans image.\n\n"
+                    f"{type(exc).__name__}: {exc}"
                 )
 
         await update.message.reply_text(
@@ -2657,7 +3337,7 @@ async def ajouter_ou_fin(
         return EDIT_MENU
 
     await update.message.reply_text(
-        "Choisis une option.",
+        "❌ Choisis une option.",
         reply_markup=CONTINUER_KEYBOARD,
     )
 
@@ -2665,78 +3345,110 @@ async def ajouter_ou_fin(
 
 
 # ==============================================================
-# ENVOYER PLANNING
+# ENVOI DU PLANNING
 # ==============================================================
 
-async def send_planning(
-    update,
-    context,
-):
+async def send_planning(update, context):
+
     try:
-        logger.info("=== DEBUT GENERATION IMAGE ===")
 
         logger.info(
-            "Nombre d'anime = %d",
-            len(
-                context.user_data.get(
-                    "entries",
-                    [],
-                )
-            ),
+            "================================"
         )
+
+        logger.info(
+            "DÉBUT GÉNÉRATION DU PLANNING"
+        )
+
+        date = context.user_data.get(
+            "date",
+            "",
+        )
+
+        entries = context.user_data.get(
+            "entries",
+            [],
+        )
+
+        background = context.user_data.get(
+            "background_path"
+        )
+
+        logger.info(
+            "Date : %s",
+            date,
+        )
+
+        logger.info(
+            "Nombre d'anime : %d",
+            len(entries),
+        )
+
+        logger.info(
+            "Fond : %s",
+            background,
+        )
+
+        # ------------------------------------------------------
+        # GÉNÉRATION
+        # ------------------------------------------------------
 
         image = generate_planning_image(
-            context.user_data.get(
-                "date",
-                "",
-            ),
-            context.user_data.get(
-                "entries",
-                [],
-            ),
-            context.user_data.get(
-                "background_path",
-            ),
+            date,
+            entries,
+            background,
         )
 
         logger.info(
-            "Image générée avec succès"
+            "Image générée."
         )
 
         image.seek(0)
+
+        # ------------------------------------------------------
+        # ENVOI TELEGRAM
+        # ------------------------------------------------------
 
         await update.message.reply_photo(
             photo=image,
             caption=(
                 "📌 Planning des sorties animes du "
-                f"{context.user_data.get('date', '')}"
+                f"{date}"
             ),
         )
 
         logger.info(
-            "Image envoyée avec succès"
+            "Image envoyée sur Telegram."
+        )
+
+        logger.info(
+            "FIN GÉNÉRATION"
         )
 
     except Exception as exc:
+
         logger.exception(
-            "ERREUR GENERATION IMAGE"
+            "ERREUR GÉNÉRATION IMAGE"
         )
 
         await update.message.reply_text(
             "❌ Erreur pendant la génération :\n\n"
-            f"{type(exc).__name__}: {exc}"
+            f"Type : {type(exc).__name__}\n"
+            f"Message : {exc}"
         )
+
 
 # ==============================================================
 # MENU APRÈS GÉNÉRATION
 # ==============================================================
 
-async def edit_menu(
-    update,
-    context,
-):
+async def edit_menu(update, context):
 
     choice = update.message.text.strip().lower()
+
+    # ----------------------------------------------------------
+    # AJOUTER
+    # ----------------------------------------------------------
 
     if "ajouter" in choice:
 
@@ -2744,6 +3456,10 @@ async def edit_menu(
             update,
             context,
         )
+
+    # ----------------------------------------------------------
+    # MODIFIER
+    # ----------------------------------------------------------
 
     if "modifier un anime" in choice:
 
@@ -2776,6 +3492,10 @@ async def edit_menu(
 
         return EDIT_SELECT
 
+    # ----------------------------------------------------------
+    # SUPPRIMER
+    # ----------------------------------------------------------
+
     if "supprimer" in choice:
 
         entries = context.user_data.get(
@@ -2806,6 +3526,10 @@ async def edit_menu(
 
         return EDIT_REMOVE
 
+    # ----------------------------------------------------------
+    # MODIFIER LE FOND
+    # ----------------------------------------------------------
+
     if "modifier le fond" in choice:
 
         context.user_data[
@@ -2818,6 +3542,10 @@ async def edit_menu(
         )
 
         return IMAGE_CHOICE
+
+    # ----------------------------------------------------------
+    # MODIFIER LA DATE
+    # ----------------------------------------------------------
 
     if "modifier la date" in choice:
 
@@ -2832,10 +3560,18 @@ async def edit_menu(
 
         return DATE
 
+    # ----------------------------------------------------------
+    # RÉGÉNÉRER
+    # ----------------------------------------------------------
+
     if (
         "régénérer" in choice
         or "regenerer" in choice
     ):
+
+        await update.message.reply_text(
+            "🔄 Régénération de l'image..."
+        )
 
         await send_planning(
             update,
@@ -2843,6 +3579,10 @@ async def edit_menu(
         )
 
         return EDIT_MENU
+
+    # ----------------------------------------------------------
+    # NOUVEAU
+    # ----------------------------------------------------------
 
     if "nouveau" in choice:
 
@@ -2852,9 +3592,7 @@ async def edit_menu(
 
         context.user_data.clear()
 
-        context.user_data[
-            "entries"
-        ] = []
+        context.user_data["entries"] = []
 
         await update.message.reply_text(
             "🆕 Nouveau planning.\n\n"
@@ -2863,6 +3601,10 @@ async def edit_menu(
         )
 
         return DATE
+
+    # ----------------------------------------------------------
+    # TERMINÉ
+    # ----------------------------------------------------------
 
     if (
         "terminé" in choice
@@ -2883,21 +3625,17 @@ async def edit_menu(
         return ConversationHandler.END
 
     await update.message.reply_text(
-        "Choisis une option.",
+        "❌ Choisis une option.",
         reply_markup=POST_GEN_KEYBOARD,
     )
 
     return EDIT_MENU
-
-
+    
+    # ==============================================================
+# SUPPRESSION D'UN ANIME
 # ==============================================================
-# SUPPRESSION
-# ==============================================================
 
-async def edit_remove(
-    update,
-    context,
-):
+async def edit_remove(update, context):
 
     entries = context.user_data.get(
         "entries",
@@ -2914,18 +3652,21 @@ async def edit_remove(
     ):
 
         await update.message.reply_text(
-            f"❌ Choisis un numéro entre "
-            f"1 et {len(entries)}."
+            f"❌ Choisis un numéro entre 1 et {len(entries)}."
         )
 
         return EDIT_REMOVE
 
-    removed = entries.pop(
-        int(text) - 1
-    )
+    index = int(text) - 1
+
+    removed = entries.pop(index)
 
     await update.message.reply_text(
-        f"🗑️ Supprimé : {removed['name']}",
+        f"🗑️ Anime supprimé : {removed['name']}\n\n"
+        "⚠️ L'image actuelle n'est pas automatiquement "
+        "remplacée.\n\n"
+        "Utilise 🔄 Régénérer l'image pour mettre à jour "
+        "le planning.",
         reply_markup=POST_GEN_KEYBOARD,
     )
 
@@ -2933,13 +3674,10 @@ async def edit_remove(
 
 
 # ==============================================================
-# SÉLECTION MODIFICATION
+# SÉLECTION D'UN ANIME À MODIFIER
 # ==============================================================
 
-async def edit_select(
-    update,
-    context,
-):
+async def edit_select(update, context):
 
     entries = context.user_data.get(
         "entries",
@@ -2956,7 +3694,7 @@ async def edit_select(
     ):
 
         await update.message.reply_text(
-            "❌ Numéro invalide."
+            f"❌ Choisis un numéro entre 1 et {len(entries)}."
         )
 
         return EDIT_SELECT
@@ -2970,7 +3708,12 @@ async def edit_select(
     anime = entries[index]
 
     await update.message.reply_text(
-        f"✏️ {anime['name']}\n\n"
+        f"✏️ Anime sélectionné :\n\n"
+        f"🎬 {anime['name']}\n"
+        f"📺 Épisode : {anime['episode']}\n"
+        f"🕐 Heure : {anime['heure']}\n"
+        f"📡 Plateforme : {anime['platform']}\n"
+        f"🎙️ Version : {get_version_label(anime['version'])}\n\n"
         "Que veux-tu modifier ?",
         reply_markup=EDIT_FIELD_KEYBOARD,
     )
@@ -2979,22 +3722,21 @@ async def edit_select(
 
 
 # ==============================================================
-# CHAMP MODIFICATION
+# CHAMP À MODIFIER
 # ==============================================================
 
-async def edit_field(
-    update,
-    context,
-):
+async def edit_field(update, context):
 
     choice = update.message.text.strip().lower()
 
     if "retour" in choice:
 
-        return await edit_menu(
-            update,
-            context,
+        await update.message.reply_text(
+            "↩️ Retour.",
+            reply_markup=POST_GEN_KEYBOARD,
         )
+
+        return EDIT_MENU
 
     mapping = {
         "nom": "name",
@@ -3011,7 +3753,6 @@ async def edit_field(
         if key in choice:
 
             field = value
-
             break
 
     if field is None:
@@ -3031,6 +3772,10 @@ async def edit_field(
         "editing_custom_platform"
     ] = False
 
+    # ----------------------------------------------------------
+    # VERSION
+    # ----------------------------------------------------------
+
     if field == "version":
 
         await update.message.reply_text(
@@ -3040,6 +3785,10 @@ async def edit_field(
 
         return EDIT_VALUE
 
+    # ----------------------------------------------------------
+    # PLATEFORME
+    # ----------------------------------------------------------
+
     if field == "platform":
 
         await update.message.reply_text(
@@ -3048,6 +3797,10 @@ async def edit_field(
         )
 
         return EDIT_VALUE
+
+    # ----------------------------------------------------------
+    # AUTRES CHAMPS
+    # ----------------------------------------------------------
 
     prompts = {
         "name": "📝 Nouveau nom ?",
@@ -3064,13 +3817,10 @@ async def edit_field(
 
 
 # ==============================================================
-# VALEUR MODIFICATION
+# VALEUR DU CHAMP MODIFIÉ
 # ==============================================================
 
-async def edit_value(
-    update,
-    context,
-):
+async def edit_value(update, context):
 
     entries = context.user_data.get(
         "entries",
@@ -3088,6 +3838,7 @@ async def edit_value(
     if (
         index is None
         or field is None
+        or index < 0
         or index >= len(entries)
     ):
 
@@ -3101,7 +3852,7 @@ async def edit_value(
     value = update.message.text.strip()
 
     # ----------------------------------------------------------
-    # PLATEFORME PERSONNALISÉE
+    # PLATEFORME
     # ----------------------------------------------------------
 
     if field == "platform":
@@ -3127,7 +3878,7 @@ async def edit_value(
         if not value:
 
             await update.message.reply_text(
-                "❌ Nom invalide."
+                "❌ Le nom de la plateforme ne peut pas être vide."
             )
 
             return EDIT_VALUE
@@ -3161,7 +3912,7 @@ async def edit_value(
             return EDIT_VALUE
 
     # ----------------------------------------------------------
-    # AUTRES CHAMPS
+    # NOM
     # ----------------------------------------------------------
 
     elif field == "name":
@@ -3174,6 +3925,10 @@ async def edit_value(
 
             return EDIT_VALUE
 
+    # ----------------------------------------------------------
+    # ÉPISODE
+    # ----------------------------------------------------------
+
     elif field == "episode":
 
         if not value:
@@ -3183,6 +3938,10 @@ async def edit_value(
             )
 
             return EDIT_VALUE
+
+    # ----------------------------------------------------------
+    # HEURE
+    # ----------------------------------------------------------
 
     elif field == "heure":
 
@@ -3194,9 +3953,11 @@ async def edit_value(
 
             return EDIT_VALUE
 
-    entries[index][
-        field
-    ] = value
+    entries[index][field] = value
+
+    # ----------------------------------------------------------
+    # NETTOYAGE
+    # ----------------------------------------------------------
 
     context.user_data.pop(
         "edit_field",
@@ -3214,7 +3975,10 @@ async def edit_value(
     )
 
     await update.message.reply_text(
-        "✅ Modification enregistrée !",
+        "✅ Modification enregistrée !\n\n"
+        "🔄 N'oublie pas de choisir "
+        "« Régénérer l'image » pour actualiser "
+        "le planning.",
         reply_markup=POST_GEN_KEYBOARD,
     )
 
@@ -3222,13 +3986,10 @@ async def edit_value(
 
 
 # ==============================================================
-# AUTORISATION
+# AUTORISER UN UTILISATEUR
 # ==============================================================
 
-async def cmd_autoriser(
-    update,
-    context,
-):
+async def cmd_autoriser(update, context):
 
     if update.effective_user.id != ADMIN_ID:
 
@@ -3241,7 +4002,8 @@ async def cmd_autoriser(
     if not context.args:
 
         await update.message.reply_text(
-            "Usage : /autoriser ID"
+            "❌ Utilisation :\n"
+            "/autoriser ID"
         )
 
         return
@@ -3275,10 +4037,11 @@ async def cmd_autoriser(
     )
 
 
-async def cmd_revoquer(
-    update,
-    context,
-):
+# ==============================================================
+# RÉVOQUER UN UTILISATEUR
+# ==============================================================
+
+async def cmd_revoquer(update, context):
 
     if update.effective_user.id != ADMIN_ID:
 
@@ -3291,7 +4054,8 @@ async def cmd_revoquer(
     if not context.args:
 
         await update.message.reply_text(
-            "Usage : /revoquer ID"
+            "❌ Utilisation :\n"
+            "/revoquer ID"
         )
 
         return
@@ -3325,10 +4089,11 @@ async def cmd_revoquer(
     )
 
 
-async def cmd_utilisateurs(
-    update,
-    context,
-):
+# ==============================================================
+# LISTE DES UTILISATEURS
+# ==============================================================
+
+async def cmd_utilisateurs(update, context):
 
     if update.effective_user.id != ADMIN_ID:
 
@@ -3343,8 +4108,8 @@ async def cmd_utilisateurs(
     if not users:
 
         await update.message.reply_text(
-            f"👑 Administrateur : {ADMIN_ID}\n"
-            "Aucun utilisateur autorisé."
+            f"👑 Administrateur : {ADMIN_ID}\n\n"
+            "👥 Aucun utilisateur autorisé."
         )
 
         return
@@ -3356,7 +4121,8 @@ async def cmd_utilisateurs(
 
     await update.message.reply_text(
         f"👑 Administrateur : {ADMIN_ID}\n\n"
-        f"👥 Utilisateurs :\n{listing}"
+        f"👥 Utilisateurs autorisés :\n\n"
+        f"{listing}"
     )
 
 
@@ -3364,10 +4130,7 @@ async def cmd_utilisateurs(
 # ANNULER
 # ==============================================================
 
-async def annuler(
-    update,
-    context,
-):
+async def annuler(update, context):
 
     cleanup_background(
         context
@@ -3384,13 +4147,10 @@ async def annuler(
 
 
 # ==============================================================
-# ERREURS
+# GESTION DES ERREURS
 # ==============================================================
 
-async def error_handler(
-    update,
-    context,
-):
+async def error_handler(update, context):
 
     logger.error(
         "Erreur Telegram : %s",
@@ -3406,31 +4166,31 @@ async def error_handler(
 def main():
 
     # ----------------------------------------------------------
-    # Vérification TOKEN
+    # TOKEN
     # ----------------------------------------------------------
 
     if not TOKEN:
 
         raise RuntimeError(
-            "TOKEN TELEGRAM MANQUANT.\n\n"
+            "❌ TOKEN TELEGRAM MANQUANT.\n\n"
             "Définis la variable :\n"
             "TELEGRAM_BOT_TOKEN"
         )
 
     # ----------------------------------------------------------
-    # Vérification ADMIN
+    # ADMIN
     # ----------------------------------------------------------
 
     if ADMIN_ID == 0:
 
         raise RuntimeError(
-            "ADMIN_ID MANQUANT.\n\n"
+            "❌ ADMIN_ID MANQUANT.\n\n"
             "Définis la variable :\n"
             "ADMIN_ID"
         )
 
     # ----------------------------------------------------------
-    # Application
+    # APPLICATION
     # ----------------------------------------------------------
 
     application = (
