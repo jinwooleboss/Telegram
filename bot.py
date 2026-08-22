@@ -2607,80 +2607,71 @@ async def send_planning(
     update,
     context,
 ):
-
     try:
+        logger.info(
+            "=== DEBUT GENERATION IMAGE ==="
+        )
 
         entries = context.user_data.get(
             "entries",
             [],
         )
 
-        date_str = context.user_data.get(
+        date = context.user_data.get(
             "date",
             "",
         )
 
-        background_path = (
-            context.user_data.get(
-                "background_path"
-            )
+        background_path = context.user_data.get(
+            "background_path",
         )
 
         logger.info(
-            "=== GENERATION PLANNING ==="
-        )
-
-        logger.info(
-            "Date : %s",
-            date_str,
-        )
-
-        logger.info(
-            "Anime : %d",
+            "Nombre d'anime = %d",
             len(entries),
         )
 
         logger.info(
-            "Fond : %s",
+            "Date = %s",
+            date,
+        )
+
+        logger.info(
+            "Fond = %s",
             background_path,
         )
 
-        if not entries:
+        # ------------------------------------------------------
+        # IMPORTANT :
+        # La génération PIL est exécutée dans un thread.
+        # Elle ne bloque donc plus les autres utilisateurs.
+        # ------------------------------------------------------
 
-            raise ValueError(
-                "Aucun anime à générer."
-            )
+        import asyncio
 
-        image = generate_planning_image(
-            date_str,
+        image = await asyncio.to_thread(
+            generate_planning_image,
+            date,
             entries,
             background_path,
         )
 
+        logger.info(
+            "Image générée avec succès"
+        )
+
         image.seek(0)
 
-        # Important :
-        # on crée un nouveau BytesIO à chaque génération.
-        image_data = io.BytesIO(
-            image.getvalue()
-        )
-
-        image_data.name = (
-            "planning.png"
-        )
-
-        image_data.seek(0)
-
         await update.message.reply_photo(
-            photo=image_data,
+            photo=image,
             caption=(
-                "📌 Planning des sorties "
-                f"animes du {date_str}"
+                "📌 Planning des sorties animes du "
+                f"{date}"
             ),
         )
 
         logger.info(
-            "=== IMAGE ENVOYÉE ==="
+            "Image envoyée avec succès"
         )
 
     except Exception as exc:
