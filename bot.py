@@ -162,7 +162,7 @@ PLATFORM_COLORS = {
 
     "crunchyroll": (
         240,
-        128
+        128,
         24,
     ),
 
