@@ -143,39 +143,39 @@ PADDING_X = 60
 
 PLATFORM_COLORS = {
     "prime video": (
-        25,
-        118,
-        210,
+        135,
+        206,
+        235,
     ),
 
     "amazon prime": (
-        25,
-        118,
-        210,
+        255,
+        255,
+        255,
     ),
 
     "prime": (
-        25,
-        118,
-        210,
+        135,
+        206,
+        235,
     ),
 
     "crunchyroll": (
-        247,
-        148,
-        30,
+        240,
+        128
+        24,
     ),
 
     "netflix": (
-        200,
-        20,
-        30,
+        0,
+        0,
+        0,
     ),
 
     "adn": (
-        139,
-        61,
-        216,
+        0,
+        120,
+        225
     ),
 
     "disney+": (
@@ -195,19 +195,19 @@ PLATFORM_COLORS = {
         150,
         199,
     ),
-   
+
    "amazon": (
-         25,
-         118,
-         210,
-   
+        255,
+        255,
+        255,
+
    ),
-   
+
    "IQIYI": (
           0,
           160,
           0,
-    
+
     ),
 }
 
@@ -1295,7 +1295,7 @@ def _load_background(
     )
 
     return bg
-    
+
 def _time_sort_key(value):
     """
     Transforme une heure comme :
@@ -1413,7 +1413,7 @@ def generate_planning_image(
             for entry in entries
         ],
     )
-    
+
     W = W_BASE
 
     platform_entries = []
