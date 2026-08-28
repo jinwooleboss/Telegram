@@ -213,7 +213,7 @@ PLATFORM_COLORS = {
 
 
 # ==============================================================
-# ÉTATS CONVERSATION
+# ÉTATS CONVERSATION - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 (
@@ -222,6 +222,7 @@ PLATFORM_COLORS = {
     IMAGE_UPLOAD,
     PLATFORM,
     CUSTOM_PLATFORM,
+    PLATFORM_CONTINUE,
     NAME,
     EPISODE,
     HEURE,
@@ -232,11 +233,11 @@ PLATFORM_COLORS = {
     EDIT_SELECT,
     EDIT_FIELD,
     EDIT_VALUE,
-) = range(15)
+) = range(16)
 
 
 # ==============================================================
-# CLAVIERS
+# CLAVIERS - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 MAIN_MENU = ReplyKeyboardMarkup(
@@ -263,6 +264,14 @@ PLATFORM_KEYBOARD = ReplyKeyboardMarkup(
         ["Netflix", "ADN"],
         ["IQIYI", "Disney"],
         ["Amazon", "Autre plateforme"],
+    ],
+    resize_keyboard=True,
+)
+
+PLATFORM_CONTINUE_KEYBOARD = ReplyKeyboardMarkup(
+    [
+        ["➕ Ajouter une plateforme"],
+        ["✅ Pas d'autre plateforme"],
     ],
     resize_keyboard=True,
 )
@@ -1366,7 +1375,7 @@ def sort_entries_by_time(entries):
 
 
 # ==============================================================
-# GÉNÉRATION IMAGE
+# GÉNÉRATION IMAGE - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 def generate_planning_image(
@@ -1454,33 +1463,42 @@ def generate_planning_image(
                 entry
             )
 
+    # ----------------------------------------------------------
+    # GROUPAGE PAR PLATEFORMES - SUPPORT MULTI-PLATEFORMES
+    # ----------------------------------------------------------
+
     platforms_order = []
 
     by_platform = {}
 
     for entry in platform_entries:
 
-        platform = entry.get(
-            "platform",
-            "Autre",
-        ).strip()
+        # Support multi-plateformes
+        platforms_list = entry.get(
+            "platforms_list",
+            [entry.get("platform", "Autre")]
+        )
 
-        if not platform:
+        # Créer une clé combinée (ex: "ADN + Crunchyroll")
+        platform_key = " + ".join(
+            sorted(platforms_list)
+        )
 
-            platform = "Autre"
+        if not platform_key:
+            platform_key = "Autre"
 
-        if platform not in by_platform:
+        if platform_key not in by_platform:
 
             by_platform[
-                platform
+                platform_key
             ] = []
 
             platforms_order.append(
-                platform
+                platform_key
             )
 
         by_platform[
-            platform
+            platform_key
         ].append(
             entry
         )
@@ -1671,13 +1689,15 @@ def generate_planning_image(
     cy += 130
 
     # ----------------------------------------------------------
-    # PLATEFORMES
+    # PLATEFORMES - SUPPORT MULTI-PLATEFORMES
     # ----------------------------------------------------------
 
     for platform in platforms_order:
 
+        # Pour multi-plateformes, utiliser la première pour la couleur
+        first_platform = platform.split(" + ")[0]
         color = _platform_color(
-            platform
+            first_platform
         )
 
         logo_h = 70
@@ -1719,7 +1739,7 @@ def generate_planning_image(
         )
 
         logo = _load_logo(
-            platform,
+            first_platform,
             logo_h - 20,
         )
 
@@ -2724,7 +2744,7 @@ async def image_upload(
 
 
 # ==============================================================
-# PLATEFORME
+# PLATEFORME - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 async def ask_platform(
@@ -2758,18 +2778,24 @@ async def recevoir_platform(
 
         return CUSTOM_PLATFORM
 
-    context.user_data[
-        "current"
-    ] = {
-        "platform": platform,
-    }
+    # Initialiser la liste de plateformes si nécessaire
+    if "platforms" not in context.user_data.get("current", {}):
+        context.user_data["current"] = {
+            "platforms": [],
+        }
+
+    context.user_data["current"]["platforms"].append(platform)
+
+    nb_platforms = len(context.user_data["current"]["platforms"])
 
     await update.message.reply_text(
-        "📝 Nom de l'anime ?",
-        reply_markup=ReplyKeyboardRemove(),
+        f"✅ {platform} ajoutée.\n\n"
+        "Veux-tu ajouter une autre plateforme ?\n"
+        f"(Maximum 3 au total, {nb_platforms} sélectionnée(s))",
+        reply_markup=PLATFORM_CONTINUE_KEYBOARD,
     )
 
-    return NAME
+    return PLATFORM_CONTINUE
 
 
 async def recevoir_custom_platform(
@@ -2789,17 +2815,88 @@ async def recevoir_custom_platform(
 
         return CUSTOM_PLATFORM
 
-    context.user_data[
-        "current"
-    ] = {
-        "platform": platform,
-    }
+    # Initialiser la liste de plateformes si nécessaire
+    if "platforms" not in context.user_data.get("current", {}):
+        context.user_data["current"] = {
+            "platforms": [],
+        }
+
+    context.user_data["current"]["platforms"].append(platform)
+
+    nb_platforms = len(context.user_data["current"]["platforms"])
 
     await update.message.reply_text(
-        "📝 Nom de l'anime ?"
+        f"✅ {platform} ajoutée.\n\n"
+        "Veux-tu ajouter une autre plateforme ?\n"
+        f"(Maximum 3 au total, {nb_platforms} sélectionnée(s))",
+        reply_markup=PLATFORM_CONTINUE_KEYBOARD,
     )
 
-    return NAME
+    return PLATFORM_CONTINUE
+
+
+# ==============================================================
+# PLATEFORME CONTINUE - NOUVEAU POUR MULTI-PLATEFORMES
+# ==============================================================
+
+async def platform_continue(
+    update,
+    context,
+):
+
+    choice = (
+        update.message.text
+        .strip()
+        .lower()
+    )
+
+    platforms = context.user_data.get(
+        "current", {}
+    ).get("platforms", [])
+
+    # Vouloir ajouter une autre plateforme
+    if "ajouter" in choice:
+
+        if len(platforms) >= 3:
+
+            await update.message.reply_text(
+                "⚠️ Maximum 3 plateformes atteint.",
+                reply_markup=PLATFORM_KEYBOARD,
+            )
+
+            return PLATFORM_CONTINUE
+
+        await update.message.reply_text(
+            "📡 Plateforme supplémentaire ?",
+            reply_markup=PLATFORM_KEYBOARD,
+        )
+
+        return PLATFORM
+
+    # Continuer sans autre plateforme
+    if "pas" in choice or "✅" in choice:
+
+        if not platforms:
+
+            await update.message.reply_text(
+                "❌ Au moins une plateforme requise."
+            )
+
+            return PLATFORM_CONTINUE
+
+        await update.message.reply_text(
+            "📝 Nom de l'anime ?",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return NAME
+
+    await update.message.reply_text(
+        "❌ Choisis une option.",
+        reply_markup=PLATFORM_CONTINUE_KEYBOARD,
+    )
+
+    return PLATFORM_CONTINUE
 
 
 # ==============================================================
@@ -2904,7 +3001,7 @@ async def recevoir_heure(
 
 
 # ==============================================================
-# VERSION
+# VERSION - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 async def recevoir_version(
@@ -2941,24 +3038,37 @@ async def recevoir_version(
         "version"
     ] = value
 
+    # Créer l'entrée avec support multi-plateformes
+    entry_to_save = current.copy()
+    
+    # Garder les plateformes comme liste pour la génération
+    entry_to_save["platforms_list"] = current.get("platforms", [])
+    # Pour compatibilité, ajouter aussi "platform" (première de la liste)
+    entry_to_save["platform"] = current.get("platforms", ["Autre"])[0]
+
     context.user_data[
         "entries"
     ].append(
-        current.copy()
+        entry_to_save
     )
 
-    recap = current.copy()
+    recap = entry_to_save.copy()
 
     context.user_data[
         "current"
     ] = {}
+
+    # Affichage avec support multi-plateformes
+    platforms_display = " + ".join(
+        recap.get("platforms_list", [recap.get("platform", "Autre")])
+    )
 
     await update.message.reply_text(
         "✅ Anime ajouté !\n\n"
         f"🎬 {recap['name']}\n"
         f"📺 Épisode : {recap['episode']}\n"
         f"🕐 Heure : {recap['heure']}\n"
-        f"📡 Plateforme : {recap['platform']}\n"
+        f"📡 Plateforme(s) : {platforms_display}\n"
         f"🎙️ Version : "
         f"{get_version_label(recap['version'])}\n\n"
         "Que veux-tu faire ?",
@@ -3559,7 +3669,7 @@ async def edit_remove(
 
 
 # ==============================================================
-# SÉLECTION ANIME
+# SÉLECTION ANIME - MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 async def edit_select(
@@ -3597,12 +3707,17 @@ async def edit_select(
         index
     ]
 
+    # Support multi-plateformes
+    platforms_display = " + ".join(
+        anime.get("platforms_list", [anime.get("platform", "Autre")])
+    )
+
     await update.message.reply_text(
         f"✏️ Anime sélectionné :\n\n"
         f"🎬 {anime['name']}\n"
         f"📺 Épisode : {anime['episode']}\n"
         f"🕐 Heure : {anime['heure']}\n"
-        f"📡 Plateforme : {anime['platform']}\n"
+        f"📡 Plateforme(s) : {platforms_display}\n"
         f"🎙️ Version : "
         f"{get_version_label(anime['version'])}\n\n"
         "Que veux-tu modifier ?",
@@ -4063,7 +4178,7 @@ async def error_handler(
 
 
 # ==============================================================
-# MAIN
+# MAIN - CONVERSATION HANDLER MODIFIÉ POUR MULTI-PLATEFORMES
 # ==============================================================
 
 def main():
@@ -4102,7 +4217,7 @@ def main():
     )
 
     # ==========================================================
-    # CONVERSATION
+    # CONVERSATION - MODIFIÉE POUR MULTI-PLATEFORMES
     # ==========================================================
 
     conv_handler = ConversationHandler(
@@ -4159,6 +4274,14 @@ def main():
                     filters.TEXT
                     & ~filters.COMMAND,
                     recevoir_custom_platform,
+                )
+            ],
+
+            PLATFORM_CONTINUE: [
+                MessageHandler(
+                    filters.TEXT
+                    & ~filters.COMMAND,
+                    platform_continue,
                 )
             ],
 
