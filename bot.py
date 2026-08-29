@@ -61,7 +61,7 @@ PADDING_X = 60
 
 PLATFORM_COLORS = {
     "prime video": (135, 206, 235),
-    "viki": (77, 163, 255)
+    "viki": (77, 163, 255),
     "amazon prime": (255, 255, 255),
     "prime": (135, 206, 235),
     "crunchyroll": (240, 128, 24),
@@ -94,7 +94,7 @@ BACKGROUND_KEYBOARD = ReplyKeyboardMarkup([
 
 PLATFORM_KEYBOARD = ReplyKeyboardMarkup([
     ["Prime video", "Crunchyroll"],
-    ["Netflix","Viki" "ADN"],
+    ["Netflix","Viki", "ADN"],
     ["IQIYI", "Disney"],
     ["Amazon", "Autre plateforme"],
 ], resize_keyboard=True)
