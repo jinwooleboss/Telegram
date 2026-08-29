@@ -38,7 +38,7 @@ FONT_MEDIUM = os.path.join(BASE_DIR, "fonts", "Poppins-Medium.ttf")
 LOGOS_DIR = os.path.join(BASE_DIR, "logos")
 ALLOWED_USERS_FILE = os.path.join(BASE_DIR, "allowed_users.json")
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8419447165:AAFBB8Bq4QY85Nf_7WbPV1j_gxVBZCSJB8M").strip()
 try:
     ADMIN_ID = int(os.getenv("ADMIN_ID", "5825526159"))
 except ValueError:
