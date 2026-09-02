@@ -171,18 +171,78 @@ def _platform_color(name):
 
 
 def _load_logo(platform_name, target_h):
-    fname = str(platform_name).strip().lower().replace(" ", "").replace("+", "plus")
-    path = os.path.join(LOGOS_DIR, fname + ".png")
+    """
+    Charge le logo correspondant à une plateforme.
+
+    Les noms affichés peuvent être différents des noms de fichiers.
+    Exemple :
+        Prime Video -> prime_video.png
+        Amazon Prime -> prime_video.png
+        Crunchyroll -> crunchyroll.png
+    """
+    platform = normalize_platform(str(platform_name).strip())
+
+    logo_files = {
+        "adn": "adn.png",
+        "crunchyroll": "crunchyroll.png",
+        "iqiyi": "iqiyi.png",
+        "prime video": "prime_video.png",
+        "amazon prime": "prime_video.png",
+        "prime": "prime_video.png",
+        "amazon": "amazon.png",
+        "disney": "disney.png",
+        "netflix": "netflix.png",
+        "viki": "viki.png",
+    }
+
+    fname = logo_files.get(platform)
+
+    if not fname:
+        # Fallback : ancien système de génération automatique
+        fname = (
+            platform
+            .lower()
+            .replace(" ", "_")
+            .replace("+", "plus")
+            + ".png"
+        )
+
+    path = os.path.join(LOGOS_DIR, fname)
+
     if not os.path.isfile(path):
+        logging.warning(
+            "LOGO INTROUVABLE : plateforme=%r → %s",
+            platform_name,
+            path
+        )
         return None
+
     try:
-        img = Image.open(path).convert("RGBA")
-        if img.height <= 0:
-            return None
-        ratio = target_h / img.height
-        img = img.resize((max(1, int(img.width * ratio)), target_h), Image.Resampling.LANCZOS)
-        return img
+        logo = Image.open(path).convert("RGBA")
+
+        # Redimensionnement en conservant les proportions
+        ratio = target_h / logo.height
+        target_w = max(1, int(logo.width * ratio))
+
+        logo = logo.resize(
+            (target_w, target_h),
+            Image.Resampling.LANCZOS
+        )
+
+        logging.info(
+            "LOGO CHARGÉ : plateforme=%r → %s",
+            platform_name,
+            path
+        )
+
+        return logo
+
     except Exception:
+        logging.exception(
+            "ERREUR CHARGEMENT LOGO : plateforme=%r → %s",
+            platform_name,
+            path
+        )
         return None
 
 
